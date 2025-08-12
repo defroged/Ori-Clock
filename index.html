@@ -1,93 +1,101 @@
-<!-- index.html -->
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Oriのとけいマスター ⏰</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <h1>Oriのとけいマスター <span class="badge">2年生向け</span></h1>
-    <div class="sub">やさしい → ふつう → むずかしい の3レベルで、よむ・あわせる・けいさん を練習できるよ。</div>
-  </div>
+<header class="app-header">
+  <h1>Oriのとけいマスター <span class="badge">2年生むけ</span></h1>
+  <p class="tagline">よむ・あわせる・経過時間 をたのしくれんしゅう！</p>
+
+  <!-- Collapsible Settings -->
+  <details id="settings" class="settings">
+    <summary class="settings__summary">⚙️ せってい（ひらく）</summary>
+    <div class="settings__panel">
+      <div class="settings__block">
+        <div class="settings__title">モード</div>
+        <div class="seg" role="tablist" aria-label="練習モード">
+          <button class="seg__btn" role="tab" data-mode="read" aria-selected="true">① よむ</button>
+          <button class="seg__btn" role="tab" data-mode="set">② あわせる</button>
+          <button class="seg__btn" role="tab" data-mode="elapsed">③ 経過</button>
+        </div>
+      </div>
+
+      <div class="settings__block">
+        <div class="settings__title">レベル</div>
+        <select id="levelSel" class="select">
+          <option value="1">レベル1：ちょうど/半</option>
+          <option value="2">レベル2：5分ごと</option>
+          <option value="3">レベル3：1分</option>
+        </select>
+      </div>
+
+      <div class="settings__block">
+        <label class="toggle">
+          <input type="checkbox" id="ampm">
+          <span>午前/午後をつかう（よむ・経過）</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="showNums" checked>
+          <span>数字をひょうじ</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="hint5" checked>
+          <span>5分メモリをつよく</span>
+        </label>
+      </div>
+
+      <div class="settings__block helpbox">
+        <p class="small">
+          ・① よむ：とけいを見て「◯時◯分」をえらぶ。<br>
+          ・② あわせる：お題の時間に分しん（長い針）をドラッグ。<br>
+          ・③ 経過：たとえば「2時20分から30分後は？」。<br>
+        </p>
+        <button class="btn ghost" id="openHelp">くわしい説明</button>
+      </div>
+    </div>
+  </details>
 </header>
 
-<div class="wrap grid">
-  <!-- LEFT: controls -->
-  <aside class="panel" aria-label="設定">
-    <div class="section-title">モード</div>
-    <div class="tabs" role="tablist" aria-label="練習モード">
-      <button class="tab" role="tab" data-mode="read" aria-selected="true">① よむクイズ</button>
-      <button class="tab" role="tab" data-mode="set">② 針をあわせる</button>
-      <button class="tab" role="tab" data-mode="elapsed">③ 経過時間</button>
+<main class="phone" aria-live="polite">
+  <section class="clock-card">
+    <svg class="clock hint-5" viewBox="0 0 340 340" aria-label="アナログとけい" id="clockSvg">
+      <defs>
+        <filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".1"/></filter>
+      </defs>
+      <g transform="translate(10,10)">
+        <circle cx="160" cy="160" r="158" class="face" />
+        <circle cx="160" cy="160" r="158" class="rim" />
+        <g id="ticks"></g>
+        <g id="nums"></g>
+        <line id="hourHand" class="hand hour" x1="160" y1="160" x2="160" y2="95" />
+        <line id="minHand"  class="hand min"  x1="160" y1="160" x2="160" y2="60" />
+        <circle cx="160" cy="160" r="4" class="pin" />
+      </g>
+    </svg>
+
+    <div class="status">
+      <span class="stat-pill">⭐ <span id="score">0</span></span>
+      <span class="stat-pill">れんさ：<span id="streak">0</span></span>
+      <span class="stat-pill">正解率：<span id="rate">0%</span></span>
     </div>
 
-    <div class="section-title">レベル</div>
-    <div class="row">
-      <select id="levelSel" aria-label="レベル">
-        <option value="1">レベル1：じ と 30分（半）</option>
-        <option value="2">レベル2：5分ごと</option>
-        <option value="3">レベル3：1分まで</option>
-      </select>
+    <div class="actions">
+      <button class="btn primary big" id="nextBtn">▶ スタート / つぎへ</button>
+      <button class="btn big" id="replayBtn" disabled>↻ もう1回</button>
+      <button class="btn ghost big" id="showAnsBtn" disabled>👀 こたえ</button>
     </div>
+  </section>
 
-    <div class="section-title">オプション</div>
-    <label class="toggle row"><input type="checkbox" id="ampm"> 午前/午後をつかう（よむ・経過時間）</label>
-    <label class="toggle row"><input type="checkbox" id="showNums" checked> 数字をひょうじ</label>
-    <label class="toggle row"><input type="checkbox" id="hint5" checked> 5分ごとのメモリをつよく表示</label>
-
-    <div class="section-title">あそびかた</div>
-    <div class="help">
-      ・① よむクイズ：とけいを見て、正しい「◯時◯分」をえらぼう。<br>
-      ・② 針をあわせる：お題の時間にぴったりなるように、分針をドラッグ（ひっぱる）してね。<br>
-      ・③ 経過時間：たとえば「2時20分から30分後は？」のような問題だよ。<br>
-      <button class="btn ghost" id="openHelp" style="margin-top:8px">くわしい説明をひらく</button>
-    </div>
-  </aside>
-
-  <!-- RIGHT: stage -->
-  <main class="stage" aria-live="polite">
-    <div class="clock-wrap">
-      <svg class="clock hint-5" viewBox="0 0 340 340" aria-label="アナログとけい" id="clockSvg">
-        <defs>
-          <filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".1"/></filter>
-        </defs>
-        <g transform="translate(10,10)">
-          <circle cx="160" cy="160" r="158" class="face" />
-          <circle cx="160" cy="160" r="158" class="rim" />
-          <!-- minute ticks -->
-          <g id="ticks"></g>
-          <!-- numbers -->
-          <g id="nums"></g>
-          <!-- hands (rotate around 160,160 via SVG transform attribute) -->
-          <line id="hourHand" class="hand hour" x1="160" y1="160" x2="160" y2="95" />
-          <line id="minHand"  class="hand min"  x1="160" y1="160" x2="160" y2="60" />
-          <circle cx="160" cy="160" r="4" class="pin" />
-        </g>
-      </svg>
-      <div class="status">
-        <span class="stat-pill">⭐ <span id="score">0</span></span>
-        <span class="stat-pill">れんさ：<span id="streak">0</span></span>
-        <span class="stat-pill">正解率：<span id="rate">0%</span></span>
-      </div>
-      <div class="actions">
-        <button class="btn primary" id="nextBtn">スタート / つぎへ</button>
-        <button class="btn" id="replayBtn" disabled>もう1回</button>
-        <button class="btn ghost" id="showAnsBtn" disabled>こたえを見る</button>
-      </div>
-    </div>
-
-    <section>
-      <div class="prompt" id="prompt">よういはいい？「スタート」をおしてね。</div>
-      <div class="choices" id="choices" role="group" aria-label="こたえ"></div>
-      <div class="small" id="tinyMsg"></div>
-    </section>
-  </main>
-</div>
+  <section class="qa">
+    <div class="prompt" id="prompt">よういはいい？「スタート」をおしてね。</div>
+    <div class="choices" id="choices" role="group" aria-label="こたえ"></div>
+    <div class="tiny" id="tinyMsg"></div>
+  </section>
+</main>
 
 <!-- Help modal -->
 <dialog id="helpDlg">
@@ -95,12 +103,12 @@
     <button class="close" id="closeHelp">とじる</button>
     <h2>くわしい説明（Oriへ）</h2>
     <p>
-      ・まずは レベル1 からはじめよう。長い針（分しん）が「12」なら「ちょうど」。<br>
-      ・「6」にくると「半（はん）」だよ。たとえば「3時半」。<br>
-      ・レベル2では 5分ごとに読むれんしゅう。長い針が「1」なら「5分」、「2」なら「10分」…だよ。<br>
-      ・レベル3は1分きざみ。ながい針が少しでも動くと分がふえるよ。<br>
-      ・②のモードでは、とけいをドラッグして分しんを動かせるよ。レベルによって 30分/5分/1分 ごとにピタッと止まるよ。<br>
-      ・午前/午後（AM/PM）をつかう にチェックを入れると、「午前3時」「午後3時」みたいな出題にもチャレンジできるよ。
+      ・まずは レベル1 から。長い針が「12」→「ちょうど」。<br>
+      ・「6」→「半（はん）」。たとえば「3時半」。<br>
+      ・レベル2：5分ごと（1=5分, 2=10分 …）。<br>
+      ・レベル3：1分きざみ。<br>
+      ・②では分しんをドラッグ。レベルにより 30/5/1分でピタッと止まるよ。<br>
+      ・午前/午後をつかう にチェックで「午前3時」「午後3時」もOK。
     </p>
   </div>
 </dialog>

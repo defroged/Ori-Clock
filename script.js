@@ -1,13 +1,10 @@
-// script.js
-
 /* ===== Utilities ===== */
 const $ = (s, el=document) => el.querySelector(s);
 const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
 const pad2 = n => n.toString().padStart(2,'0');
-
-function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; } // inclusive
-function choice(arr){return arr[Math.floor(Math.random()*arr.length)];}
-function clamp(v,min,max){return Math.max(min, Math.min(max, v));}
+const randInt = (min,max)=> Math.floor(Math.random()*(max-min+1))+min;
+const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
 
 function to12h(h){ const hour = h%12===0?12:h%12; const am = h<12; return {hour, am}; }
 function jTime(h24, m, useAMPM=false, useColloquial=true){
@@ -24,11 +21,7 @@ function jTime(h24, m, useAMPM=false, useColloquial=true){
   else body = `${h}時${m}分`;
   return (ampm? ampm : '') + body;
 }
-function minuteSnapByLevel(level){
-  if(level==1) return 30;
-  if(level==2) return 5;
-  return 1;
-}
+function minuteSnapByLevel(level){ return level==1 ? 30 : level==2 ? 5 : 1; }
 
 /* ===== State ===== */
 const state = {
@@ -37,14 +30,81 @@ const state = {
   useAmPm:false,
   showNums:true,
   hint5:true,
-  target:{h:3, m:30},      // 出題
-  targetDelta:0,           // 経過分
+  target:{h:3, m:30},
+  targetDelta:0,
   score:0, streak:0, total:0, correct:0,
-  clock:{h:3, m:30},       // 表示中の針（setモード）
+  clock:{h:3, m:30},
   dragging:false,
 };
 
-/* ===== Build ticks & numbers ===== */
+/* ===== Web Audio (instant feedback) ===== */
+const Snd = {
+  ctx:null, gain:null, buffers:{}, primed:false, loading:false,
+  async init(){
+    if(this.primed || this.loading) return;
+    try{
+      this.loading = true;
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if(this.ctx.state === 'suspended') await this.ctx.resume();
+      this.gain = this.ctx.createGain();
+      this.gain.gain.value = 0.6; // comfortable volume
+      this.gain.connect(this.ctx.destination);
+      const files = { correct:'correct.mp3', wrong:'oops.mp3' };
+      await Promise.all(Object.entries(files).map(async ([key, url])=>{
+        const res = await fetch(url);
+        const buf = await res.arrayBuffer();
+        this.buffers[key] = await this.ctx.decodeAudioData(buf);
+      }));
+      this.primed = true;
+    } catch(e){
+      console.warn('Audio init failed:', e);
+    } finally{
+      this.loading = false;
+    }
+  },
+  async ensure(){
+    if(!this.ctx){
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.gain = this.ctx.createGain();
+      this.gain.gain.value = 0.6;
+      this.gain.connect(this.ctx.destination);
+    }
+    if(this.ctx.state === 'suspended') await this.ctx.resume();
+    if(!this.primed && !this.loading) this.init();
+  },
+  play(name){
+    if(!this.ctx || !this.buffers[name]){
+      // fallback tiny beep so feedback feels instant even if mp3 still decoding
+      try{
+        this.ensure();
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = name==='correct' ? 'triangle' : 'sawtooth';
+        o.frequency.value = name==='correct' ? 880 : 180;
+        g.gain.value = .0001;
+        o.connect(g).connect(this.ctx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(.25, this.ctx.currentTime + 0.005);
+        g.gain.exponentialRampToValueAtTime(.0001, this.ctx.currentTime + 0.12);
+        o.stop(this.ctx.currentTime + 0.12);
+      }catch{}
+      return;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.buffers[name];
+    src.connect(this.gain);
+    src.start();
+  }
+};
+// Prime audio on first gesture to guarantee instant playback on mobile
+function primeOnFirstGesture(){
+  const kick = async ()=>{ await Snd.ensure(); window.removeEventListener('pointerdown', kick); window.removeEventListener('touchstart', kick); };
+  window.addEventListener('pointerdown', kick, {passive:true});
+  window.addEventListener('touchstart', kick, {passive:true});
+}
+primeOnFirstGesture();
+
+/* ===== Build clock face ===== */
 (function buildClockFace(){
   const ticks = $('#ticks');
   const nums  = $('#nums');
@@ -77,11 +137,10 @@ const state = {
   }
 })();
 
-/* ===== Clock rendering (SVG transform fix) ===== */
+/* ===== Render hands ===== */
 function setHands(h24, m){
   const hourDeg = ((h24%12)*30) + (m*0.5);
   const minDeg  = m*6;
-  // Rotate around (160,160) which is the true center inside the <g> group
   $('#hourHand').setAttribute('transform', `rotate(${hourDeg} 160 160)`);
   $('#minHand').setAttribute('transform',  `rotate(${minDeg} 160 160)`);
 }
@@ -92,7 +151,7 @@ function applyHints(){
   svg.classList.toggle('hint-5', state.hint5);
 }
 
-/* ===== Random time generators by level ===== */
+/* ===== Time helpers ===== */
 function genTime(level, allowAllHours=true){
   const h = allowAllHours ? randInt(0,23) : randInt(1,12);
   let m=0;
@@ -127,7 +186,7 @@ function newChallenge(){
   }else if(state.mode==='set'){
     state.target = genTime(state.level, true);
     const t = jTime(state.target.h, state.target.m, state.useAmPm, true);
-    $('#prompt').textContent = `お題： ${t} にぴったり あわせてみよう。分針（長い針）をドラッグしてね。`;
+    $('#prompt').textContent = `お題： ${t} にぴったり あわせよう。分しんをドラッグ！`;
     state.clock = genTime(3,true);
     setHands(state.clock.h, state.clock.m);
     $('#showAnsBtn').disabled = false;
@@ -137,7 +196,7 @@ function newChallenge(){
     state.targetDelta = genDelta(state.level);
     const q = state.useAmPm ? jTime(state.target.h,state.target.m,true,true)
                             : jTime(state.target.h,state.target.m,false,true);
-    $('#prompt').textContent = `${q} から ${state.targetDelta}分 あと（ご）は なんじなんぷん？`;
+    $('#prompt').textContent = `${q} から ${state.targetDelta}分 あとは？`;
     setHands(state.target.h, state.target.m);
     buildChoicesForElapsed();
   }
@@ -199,8 +258,11 @@ function disableChoices(){
 /* ===== Scoring & feedback ===== */
 function onAnswer(ok){
   state.total++;
-  if(ok){ state.score+=10; state.correct++; state.streak++; cheer(); }
-  else { state.streak=0; boo(); }
+  if(ok){
+    state.score+=10; state.correct++; state.streak++; cheer(); Snd.play('correct');
+  } else {
+    state.streak=0; boo(); Snd.play('wrong');
+  }
   updateStats();
 }
 function updateStats(){
@@ -216,7 +278,7 @@ function cheer(){
   for(let i=0;i<20;i++){
     const p = document.createElement('i');
     p.style.left = Math.random()*100+'vw';
-    p.style.color = ['#22c55e','#10b981','#34d399','#a7f3d0','#86efac','#6366f1','#f59e0b'][randInt(0,6)];
+    p.style.color = ['#22c55e','#10b981','#34d399','#a7f3d0','#86efac','#f59e0b','#6366f1'][randInt(0,6)];
     p.style.animationDelay = (Math.random()*0.2)+'s';
     c.appendChild(p);
     setTimeout(()=>p.remove(), 1200);
@@ -280,9 +342,9 @@ function maybeAutoCheck(){
 }
 
 /* ===== UI wiring ===== */
-for(const t of $$('.tab')){
+for(const t of $$('.seg__btn')){
   t.addEventListener('click', ()=>{
-    $$('.tab').forEach(el=>el.setAttribute('aria-selected','false'));
+    $$('.seg__btn').forEach(el=>el.setAttribute('aria-selected','false'));
     t.setAttribute('aria-selected','true');
     state.mode = t.dataset.mode;
     $('#choices').innerHTML='';
@@ -296,7 +358,10 @@ $('#levelSel').addEventListener('change', e=>{ state.level = +e.target.value; })
 $('#ampm').addEventListener('change', e=>{ state.useAmPm = e.target.checked; });
 $('#showNums').addEventListener('change', e=>{ state.showNums = e.target.checked; applyHints(); });
 $('#hint5').addEventListener('change', e=>{ state.hint5 = e.target.checked; applyHints(); });
-$('#nextBtn').addEventListener('click', newChallenge);
+$('#nextBtn').addEventListener('click', async ()=>{
+  await Snd.ensure(); // make sure audio is ready before play feedback for first answer
+  newChallenge();
+});
 $('#replayBtn').addEventListener('click', ()=>{
   if(state.mode==='read' || state.mode==='elapsed') newChallenge();
   else{
@@ -309,7 +374,7 @@ $('#showAnsBtn').addEventListener('click', ()=>{
   if(state.mode!=='set') return;
   const t = jTime(state.target.h, state.target.m, state.useAmPm, true);
   tip('こたえは → ' + t);
-  setHands(state.target.h, state.target.m); // 学びのために正解を表示
+  setHands(state.target.h, state.target.m); // 正解を表示
 });
 $('#openHelp').addEventListener('click', ()=>$('#helpDlg').showModal());
 $('#closeHelp').addEventListener('click', ()=>$('#helpDlg').close());
