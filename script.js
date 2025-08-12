@@ -214,16 +214,16 @@ function buildChoicesForRead(){
     set.add( jTime(d.h,d.m, state.useAmPm, true) );
   }
   const list = Array.from(set).sort(()=>Math.random()-0.5);
-  const box = $('#choices');
+  const box = $('#choices'); box.dataset.correct = correct; // store authoritative answer
   for(const label of list){
     const b = document.createElement('button');
     b.className='choice';
     b.textContent = label;
     b.onclick = () => {
-      const ok = label===correct;
+      const ok = label === box.dataset.correct;
       onAnswer(ok);
       b.classList.add(ok?'correct':'wrong');
-      for(const c of $$('.choice')) if(c.textContent===correct) c.classList.add('correct');
+      for(const c of $$('.choice')) if(c.textContent===box.dataset.correct) c.classList.add('correct');
       disableChoices();
     };
     box.appendChild(b);
@@ -239,7 +239,7 @@ function buildChoicesForElapsed(){
     set.add( jTime(d.h, d.m, state.useAmPm, true) );
   }
   const list = Array.from(set).sort(()=>Math.random()-0.5);
-  const box = $('#choices'); box.innerHTML='';
+  const box = $('#choices'); box.innerHTML=''; box.dataset.correct = correct;
   for(const label of list){
     const b = document.createElement('button');
     b.className='choice';
@@ -378,17 +378,11 @@ $('#showAnsBtn').addEventListener('click', ()=>{
   if(state.mode==='set'){
     const t = jTime(state.target.h, state.target.m, state.useAmPm, true);
     tip('こたえは → ' + t);
-    setHands(state.target.h, state.target.m); // 正解を表示
+    setHands(state.target.h, state.target.m);
     return;
   }
-  // read / elapsed: highlight the correct choice
-  let correctLabel = '';
-  if(state.mode==='read'){
-    correctLabel = jTime(state.target.h, state.target.m, state.useAmPm, true);
-  }else if(state.mode==='elapsed'){
-    const ans = addMinutes(state.target.h, state.target.m, state.targetDelta);
-    correctLabel = jTime(ans.h, ans.m, state.useAmPm, true);
-  }
+  // read / elapsed use the stored correct label
+  const correctLabel = $('#choices').dataset.correct || '';
   for(const c of $$('.choice')){
     if(c.textContent === correctLabel) c.classList.add('correct');
     c.disabled = true;

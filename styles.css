@@ -97,17 +97,21 @@ body{
   display:block; margin:0 auto;
   touch-action:none; user-select:none;
 }
-.hand{stroke-linecap:round; filter:url(#shadow)}
-.hand.hour{stroke:#334155; stroke-width:7}   /* deep blue-gray */
-.hand.min{stroke:#f97316; stroke-width:5}    /* bright orange */
-.pin{fill:#111827}
+.hand{ stroke-linecap:round; } /* no filter */
+.hand.hour{ stroke:#1f2937; stroke-width:8; }
+.hand.min { stroke:#f97316; stroke-width:6; }
+.pin{ fill:#0f172a; }
 
-.clock .face{fill:#fff}
+.clock .face{ fill:#ffffff !important; }
 .clock .rim{stroke:#ffd7bf; stroke-width:3}
 .clock .tick{stroke:#f59e0b; stroke-linecap:round}
 .clock .tick.hour{stroke-width:3.5}
 .clock .tick.min{stroke-width:2}
-.clock .num{fill:#0f172a; font-weight:900; font-size:22px; text-anchor:middle; dominant-baseline:middle}
+.clock .num{
+  fill:#0f172a; font-weight:900; font-size:22px;
+  text-anchor:middle; dominant-baseline:middle;
+  stroke:#ffffff; stroke-width:2px; paint-order:stroke; stroke-linejoin:round;
+}
 
 .hint-5 .tick.min{opacity:.33}
 .hint-nums .num{opacity:.95}

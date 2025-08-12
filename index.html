@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light"><!-- hint browsers not to auto-darken -->
   <title>Oriのとけいマスター ⏰</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -10,9 +11,71 @@
 <header class="app-header">
   <h1>Oriのとけいマスター <span class="badge">2年生むけ</span></h1>
   <p class="tagline">よむ・あわせる・経過時間 をたのしくれんしゅう！</p>
+  
+</header>
+
+<main class="phone" aria-live="polite">
+  <section class="clock-card">
+    <svg class="clock hint-5" viewBox="0 0 340 340" aria-label="アナログとけい" id="clockSvg">
+      <defs>
+        <filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".1"/></filter>
+      </defs>
+      <g transform="translate(10,10)">
+        <!-- force white face so mobile dark mode never turns it black -->
+        <!-- Solid white backing (fixes iOS Firefox dark face issue) -->
+        <rect x="0" y="0" width="320" height="320" fill="#ffffff"/>
+        <!-- Face + rim -->
+        <circle cx="160" cy="160" r="158" class="face" fill="#ffffff"/>
+        <circle cx="160" cy="160" r="158" class="rim"/>
+        <!-- ticks & numbers -->
+        <g id="ticks"></g>
+        <g id="nums"></g>
+        <!-- hands -->
+        <line id="hourHand" class="hand hour" x1="160" y1="160" x2="160" y2="95"/>
+        <line id="minHand"  class="hand min"  x1="160" y1="160" x2="160" y2="60"/>
+        <circle cx="160" cy="160" r="4" class="pin"/>
+      </g>
+    </svg>
+
+    <div class="status">
+      <span class="stat-pill">⭐ <span id="score">0</span></span>
+      <span class="stat-pill">れんさ：<span id="streak">0</span></span>
+      <span class="stat-pill">正解率：<span id="rate">0%</span></span>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary big" id="nextBtn">▶ スタート / つぎへ</button>
+      <button class="btn big" id="replayBtn" disabled>↻ もう1回</button>
+      <button class="btn ghost big" id="showAnsBtn" disabled>👀 こたえ</button>
+    </div>
+  </section>
+
+  <section class="qa">
+    <div class="prompt" id="prompt">よういはいい？「スタート」をおしてね。</div>
+    <div class="choices" id="choices" role="group" aria-label="こたえ"></div>
+    <div class="tiny" id="tinyMsg"></div>
+  </section>
+</main>
+
+<!-- Help modal -->
+<dialog id="helpDlg">
+  <div class="modal">
+    <button class="close" id="closeHelp">とじる</button>
+    <h2>くわしい説明（Oriへ）</h2>
+    <p>
+      ・まずは レベル1 から。長い針が「12」→「ちょうど」。<br>
+      ・「6」→「半（はん）」。たとえば「3時半」。<br>
+      ・レベル2：5分ごと（1=5分, 2=10分 …）。<br>
+      ・レベル3：1分きざみ。<br>
+      ・②では分しんをドラッグ。レベルにより 30/5/1分でピタッと止まるよ。<br>
+      ・午前/午後をつかう にチェックで「午前3時」「午後3時」もOK。
+    </p>
+  </div>
+</dialog>
 
   <!-- Collapsible Settings -->
-  <details id="settings" class="settings">
+
+<details id="settings" class="settings">
     <summary class="settings__summary">⚙️ せってい（ひらく）</summary>
     <div class="settings__panel">
       <div class="settings__block">
@@ -58,62 +121,6 @@
       </div>
     </div>
   </details>
-</header>
-
-<main class="phone" aria-live="polite">
-  <section class="clock-card">
-    <svg class="clock hint-5" viewBox="0 0 340 340" aria-label="アナログとけい" id="clockSvg">
-      <defs>
-        <filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".1"/></filter>
-      </defs>
-      <g transform="translate(10,10)">
-        <!-- force white face so mobile dark mode never turns it black -->
-        <circle cx="160" cy="160" r="158" class="face" fill="#ffffff"/>
-        <circle cx="160" cy="160" r="158" class="rim"/>
-        <g id="ticks"></g>
-        <g id="nums"></g>
-        <!-- hands (colors defined in CSS) -->
-        <line id="hourHand" class="hand hour" x1="160" y1="160" x2="160" y2="95"/>
-        <line id="minHand"  class="hand min"  x1="160" y1="160" x2="160" y2="60"/>
-        <circle cx="160" cy="160" r="4" class="pin"/>
-      </g>
-    </svg>
-
-    <div class="status">
-      <span class="stat-pill">⭐ <span id="score">0</span></span>
-      <span class="stat-pill">れんさ：<span id="streak">0</span></span>
-      <span class="stat-pill">正解率：<span id="rate">0%</span></span>
-    </div>
-
-    <div class="actions">
-      <button class="btn primary big" id="nextBtn">▶ スタート / つぎへ</button>
-      <button class="btn big" id="replayBtn" disabled>↻ もう1回</button>
-      <button class="btn ghost big" id="showAnsBtn" disabled>👀 こたえ</button>
-    </div>
-  </section>
-
-  <section class="qa">
-    <div class="prompt" id="prompt">よういはいい？「スタート」をおしてね。</div>
-    <div class="choices" id="choices" role="group" aria-label="こたえ"></div>
-    <div class="tiny" id="tinyMsg"></div>
-  </section>
-</main>
-
-<!-- Help modal -->
-<dialog id="helpDlg">
-  <div class="modal">
-    <button class="close" id="closeHelp">とじる</button>
-    <h2>くわしい説明（Oriへ）</h2>
-    <p>
-      ・まずは レベル1 から。長い針が「12」→「ちょうど」。<br>
-      ・「6」→「半（はん）」。たとえば「3時半」。<br>
-      ・レベル2：5分ごと（1=5分, 2=10分 …）。<br>
-      ・レベル3：1分きざみ。<br>
-      ・②では分しんをドラッグ。レベルにより 30/5/1分でピタッと止まるよ。<br>
-      ・午前/午後をつかう にチェックで「午前3時」「午後3時」もOK。
-    </p>
-  </div>
-</dialog>
 
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
