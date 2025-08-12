@@ -180,7 +180,7 @@ function newChallenge(){
   if(state.mode==='read'){
     state.target = genTime(state.level, true);
     setHands(state.target.h, state.target.m);
-    $('#prompt').textContent = 'この とけいは なんじ なんぷん？（正しいよみかたを えらんでね）';
+    $('#prompt').textContent = 'なんじ なんぷん？';
     buildChoicesForRead();
     $('#showAnsBtn').disabled = false;            // allow showing answer
     // bring answers into view automatically on phones
