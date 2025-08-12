@@ -81,7 +81,7 @@ body{
 .small{font-size:14px; color:#7c2d12}
 
 /* Phone layout */
-.phone{padding:12px 16px 24px}
+.phone{padding:0px 16px;}
 .clock-card{
   background:var(--panel);
   border:1px solid #ffe4d6;
@@ -93,8 +93,8 @@ body{
 /* Clock */
 .clock{
   /* smaller default so choices fit without scrolling on phones */
-  width:var(--clock-size, min(86vw, 320px));
-  height:var(--clock-size, min(86vw, 320px));
+  width:var(--clock-size, min(75vw, 320px));
+  height:var(--clock-size, min(75vw, 320px));
   display:block; margin:0 auto;
   touch-action:none; user-select:none;
 }
