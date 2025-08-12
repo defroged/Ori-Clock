@@ -175,7 +175,6 @@ function addMinutes(h24,m,delta){
 function newChallenge(){
   $('#choices').innerHTML='';
   $('#tinyMsg').textContent='';
-  $('#showAnsBtn').disabled = true;
   $('#replayBtn').disabled = true;
 
   if(state.mode==='read'){
@@ -183,6 +182,9 @@ function newChallenge(){
     setHands(state.target.h, state.target.m);
     $('#prompt').textContent = 'この とけいは なんじ なんぷん？（正しいよみかたを えらんでね）';
     buildChoicesForRead();
+    $('#showAnsBtn').disabled = false;            // allow showing answer
+    // bring answers into view automatically on phones
+    $('.qa').scrollIntoView({behavior:'smooth', block:'start'});
   }else if(state.mode==='set'){
     state.target = genTime(state.level, true);
     const t = jTime(state.target.h, state.target.m, state.useAmPm, true);
@@ -199,6 +201,8 @@ function newChallenge(){
     $('#prompt').textContent = `${q} から ${state.targetDelta}分 あとは？`;
     setHands(state.target.h, state.target.m);
     buildChoicesForElapsed();
+    $('#showAnsBtn').disabled = false;
+    $('.qa').scrollIntoView({behavior:'smooth', block:'start'});
   }
 }
 
@@ -371,10 +375,26 @@ $('#replayBtn').addEventListener('click', ()=>{
   }
 });
 $('#showAnsBtn').addEventListener('click', ()=>{
-  if(state.mode!=='set') return;
-  const t = jTime(state.target.h, state.target.m, state.useAmPm, true);
-  tip('こたえは → ' + t);
-  setHands(state.target.h, state.target.m); // 正解を表示
+  if(state.mode==='set'){
+    const t = jTime(state.target.h, state.target.m, state.useAmPm, true);
+    tip('こたえは → ' + t);
+    setHands(state.target.h, state.target.m); // 正解を表示
+    return;
+  }
+  // read / elapsed: highlight the correct choice
+  let correctLabel = '';
+  if(state.mode==='read'){
+    correctLabel = jTime(state.target.h, state.target.m, state.useAmPm, true);
+  }else if(state.mode==='elapsed'){
+    const ans = addMinutes(state.target.h, state.target.m, state.targetDelta);
+    correctLabel = jTime(ans.h, ans.m, state.useAmPm, true);
+  }
+  for(const c of $$('.choice')){
+    if(c.textContent === correctLabel) c.classList.add('correct');
+    c.disabled = true;
+  }
+  tip('こたえを見たよ！つぎへ 進もう。');
+  $('#replayBtn').disabled = false;
 });
 $('#openHelp').addEventListener('click', ()=>$('#helpDlg').showModal());
 $('#closeHelp').addEventListener('click', ()=>$('#helpDlg').close());

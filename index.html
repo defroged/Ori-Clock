@@ -67,13 +67,15 @@
         <filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".1"/></filter>
       </defs>
       <g transform="translate(10,10)">
-        <circle cx="160" cy="160" r="158" class="face" />
-        <circle cx="160" cy="160" r="158" class="rim" />
+        <!-- force white face so mobile dark mode never turns it black -->
+        <circle cx="160" cy="160" r="158" class="face" fill="#ffffff"/>
+        <circle cx="160" cy="160" r="158" class="rim"/>
         <g id="ticks"></g>
         <g id="nums"></g>
-        <line id="hourHand" class="hand hour" x1="160" y1="160" x2="160" y2="95" />
-        <line id="minHand"  class="hand min"  x1="160" y1="160" x2="160" y2="60" />
-        <circle cx="160" cy="160" r="4" class="pin" />
+        <!-- hands (colors defined in CSS) -->
+        <line id="hourHand" class="hand hour" x1="160" y1="160" x2="160" y2="95"/>
+        <line id="minHand"  class="hand min"  x1="160" y1="160" x2="160" y2="60"/>
+        <circle cx="160" cy="160" r="4" class="pin"/>
       </g>
     </svg>
 
